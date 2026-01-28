@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lava Glitch: Updated Jump Intensity</title>
+    <style>
+        :root {
+            --lava: #ff4d00;
+            --stone: #444;
+            --ui-primary: #00ffcc;
+            --ui-accent: #ff00ff;
+            --ui-bg: rgba(0, 0, 0, 0.7);
+        }
+        
+        body.theme-cyber { --ui-primary: #00ffcc; --ui-accent: #ff00ff; }
+        body.theme-gold { --ui-primary: #ffd700; --ui-accent: #ffae00; }
+        body.theme-toxic { --ui-primary: #33ff33; --ui-accent: #006600; }
+        body.theme-blaze { --ui-primary: #ff3333; --ui-accent: #ff9900; }
+        body.theme-vapor { --ui-primary: #cc99ff; --ui-accent: #ff00ff; }
+        body.theme-deep { --ui-primary: #0066ff; --ui-accent: #00ffff; }
+        body.theme-ghost { --ui-primary: #ffffff; --ui-accent: #666666; }
+        body.theme-pink { --ui-primary: #ff1493; --ui-accent: #4b0082; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+            touch-action: none;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 500px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+        #score {
+            font-size: 40px;
+            font-weight: bold;
+            color: var(--ui-primary);
+            text-shadow: 2px 2px 0 #000, 0 0 15px var(--ui-primary);
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+        #high-score-label {
+            font-size: 14px;
+            color: var(--ui-accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: -5px;
+            opacity: 0.8;
+            transition: color 0.3s;
+        }
+        
+        #tutorial-overlay {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            z-index: 20;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            display: none;
+        }
+        .tut-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background: var(--ui-bg);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid var(--ui-primary);
+            transition: border-color 0.3s;
+        }
+        .tut-box {
+            padding: 8px 15px;
+            border: 2px solid var(--ui-primary);
+            color: var(--ui-primary);
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            animation: pulse 2s infinite;
+            transition: color 0.3s, border-color 0.3s;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.6; transform: scale(1); }
+        }
+        
+        #home-menu, #overlay, #shop-menu {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+
+        #overlay, #shop-menu { display: none; }
+
+        #new-best-badge {
+            background: var(--ui-accent);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: none;
+            animation: flash 0.5s infinite alternate;
+        }
+        @keyframes flash { from { opacity: 1; } to { opacity: 0.5; } }
+
+        .btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-radius: 8px;
+            pointer-events: auto;
+            margin: 5px;
+            width: 220px;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        
+        #speed-up-text, #glitch-hit-text, #buff-text, #shield-text {
+            position: absolute;
+            top: 30%;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 0 #000;
+            pointer-events: none;
+            display: none;
+            z-index: 60;
+        }
+
+        #speed-up-text { color: #ff4d00; }
+        #glitch-hit-text { color: #ff00ff; animation: speedPop 1s ease-out forwards; }
+        #buff-text { color: #ffd700; animation: speedPop 1s ease-out forwards; }
+        #shield-text { color: #00ffff; animation: speedPop 1s ease-out forwards; }
+
+        #skin-menu, #theme-menu, #bg-menu {
+            position: absolute;
+            inset: 0;
+            background: #111;
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        .card {
+            background: #222;
+            border: 2px solid #444;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .card.active {
+            border-color: var(--ui-primary);
+            background: #333;
+            box-shadow: 0 0 15px rgba(255,255,255,0.1);
+        }
+        .preview-circle {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 8px;
+            border-radius: 50%;
+        }
+
+        #powerup-status {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+            pointer-events: none;
+        }
+
+        .status-label {
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 0 0 5px #000;
+            display: none;
+        }
+
+        #shield-indicator { color: #00ffff; }
+        #magnet-indicator { color: #ffd700; }
+        #jetpack-indicator { color: #ff4500; }
+        #boots-indicator { color: #33ff33; }
+
+        @keyframes speedPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="theme-cyber">
+
+<div id="game-container">
+    <div id="ui">
+        <div id="score">0m</div>
+        <div id="high-score-label">BEST: 0m</div>
+    </div>
+
+    <div id="powerup-status">
+        <div id="shield-indicator" class="status-label">🛡️ SHIELD ACTIVE</div>
+        <div id="magnet-indicator" class="status-label">🧲 MAGNET ACTIVE</div>
+        <div id="boots-indicator" class="status-label">🦘 SUPER JUMP ACTIVE</div>
+        <div id="jetpack-indicator" class="status-label">🚀 JETPACK: <span id="jet-timer">5.0</span>s</div>
+    </div>
+    
+    <div id="tutorial-overlay">
+        <div class="tut-container">
+            <div class="tut-box">TAP LEFT</div>
+            <div style="font-size: 12px; color: #888;">GOAL: 300m</div>
+            <div class="tut-box">TAP RIGHT</div>
+        </div>
+    </div>
+
+    <div id="near-miss-text" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--ui-accent); font-weight:bold; font-size:40px; z-index:50;">NEAR MISS!</div>
+    <div id="speed-up-text">LAVA SPEED INCREASED!</div>
+    <div id="glitch-hit-text">SCORE PENALTY: -200m</div>
+    <div id="shield-text">SHIELD USED! NO PENALTY</div>
+    <div id="buff-text">+200m BOOST!</div>
+    <canvas id="canvas"></canvas>
+    
+    <div id="home-menu">
+        <h1 style="font-size: 40px; margin-bottom: 10px; color: var(--ui-primary);">LAVA GLITCH</h1>
+        <button id="start-btn" class="btn">Start Game</button>
+        <button id="open-shop-btn" class="btn btn-secondary">Ad Shop (Free Powerups)</button>
+        <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 10px;">
+            <button id="home-skins-btn" class="btn btn-secondary">Character Skins</button>
+            <button id="home-themes-btn" class="btn btn-secondary">UI Themes</button>
+        </div>
+    </div>
+
+    <div id="shop-menu">
+        <h2 style="color: #00ffff;">AD SHOP</h2>
+        <p style="text-align: center; padding: 10px; font-size: 14px;">Watch a quick ad to get a <br><b>Free Powerup</b><br>for your next game!</p>
+        <button id="watch-ad-boots-btn" class="btn" style="background: #33ff33; font-size: 16px;">Watch Ad: Super Jump Boots</button>
+        <button id="watch-ad-shield-btn" class="btn" style="background: #00ffff; font-size: 16px;">Watch Ad: Shield</button>
+        <button id="watch-ad-magnet-btn" class="btn" style="background: #ffd700; font-size: 16px;">Watch Ad: Magnet</button>
+        <button id="watch-ad-jetpack-btn" class="btn" style="background: #ff4500; font-size: 16px;">Watch Ad: Jetpack (5s)</button>
+        <button id="close-shop-btn" class="btn btn-secondary">Back to Menu</button>
+    </div>
+
+    <div id="overlay">
+        <div id="new-best-badge">NEW HIGH SCORE!</div>
+        <h1 style="font-size: 40px; margin-bottom: 5px;">GLITCHED</h1>
+        <p id="final-score" style="margin-bottom: 5px;">Reached 0m</p>
+        <p id="game-over-best" style="margin-bottom: 20px; font-size: 14px; color: #ddd;">Best: 0m</p>
+        <button id="revive-btn" class="btn" style="background: var(--ui-accent); color: white; display: none;">Ad: Revive</button>
+        <button id="retry-btn" class="btn">Try Again</button>
+        <button id="back-home-btn" class="btn btn-secondary">Back to Menu</button>
+    </div>
+
+    <div id="skin-menu">
+        <h2 style="letter-spacing: 4px; margin-top: 10px;">SKIN SHOP</h2>
+        <div class="grid" id="skin-grid"></div>
+        <button id="close-skins-btn" class="btn" style="margin-top: 30px; margin-bottom: 20px;">Save & Exit</button>
+    </div>
+
+    <div id="theme-menu">
+        <h2 style="letter-spacing: 4px; margin-top: 10px;">UI THEMES</h2>
+        <div class="grid" id="theme-grid"></div>
+        <button id="close-themes-btn" class="btn" style="margin-top: 30px; margin-bottom: 20px;">Save & Exit</button>
+    </div>
+</div>
+
+<script>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function play8BitJump() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(150 + Math.random() * 40, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    }
+
+    function play8BitClick() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('high-score-label');
+    const homeMenu = document.getElementById('home-menu');
+    const shopMenu = document.getElementById('shop-menu');
+    const overlay = document.getElementById('overlay');
+    
+    const startBtn = document.getElementById('start-btn');
+    const openShopBtn = document.getElementById('open-shop-btn');
+    const watchAdBootsBtn = document.getElementById('watch-ad-boots-btn');
+    const watchAdShieldBtn = document.getElementById('watch-ad-shield-btn');
+    const watchAdMagnetBtn = document.getElementById('watch-ad-magnet-btn');
+    const watchAdJetpackBtn = document.getElementById('watch-ad-jetpack-btn');
+    const closeShopBtn = document.getElementById('close-shop-btn');
+    const retryBtn = document.getElementById('retry-btn');
+    const backHomeBtn = document.getElementById('back-home-btn');
+    const reviveBtn = document.getElementById('revive-btn');
+    
+    const homeSkinsBtn = document.getElementById('home-skins-btn');
+    const homeThemesBtn = document.getElementById('home-themes-btn');
+    const skinMenu = document.getElementById('skin-menu');
+    const themeMenu = document.getElementById('theme-menu');
+    const closeSkinsBtn = document.getElementById('close-skins-btn');
+    const closeThemesBtn = document.getElementById('close-themes-btn');
+    const skinGrid = document.getElementById('skin-grid');
+    const themeGrid = document.getElementById('theme-grid');
+    
+    const tutOverlay = document.getElementById('tutorial-overlay');
+    const shieldIndicator = document.getElementById('shield-indicator');
+    const magnetIndicator = document.getElementById('magnet-indicator');
+    const bootsIndicator = document.getElementById('boots-indicator');
+    const jetpackIndicator = document.getElementById('jetpack-indicator');
+    const jetTimerText = document.getElementById('jet-timer');
+    const finalScoreEl = document.getElementById('final-score');
+    const gameOverBestEl = document.getElementById('game-over-best');
+    const newBestBadge = document.getElementById('new-best-badge');
+    const speedUpEl = document.getElementById('speed-up-text');
+    const glitchHitEl = document.getElementById('glitch-hit-text');
+    const shieldHitEl = document.getElementById('shield-text');
+    const buffHitEl = document.getElementById('buff-text');
+    const nearMissEl = document.getElementById('near-miss-text');
+
+    let width, height;
+    let player, platforms = [], enemies = [], buffs = [], lavaY, score = 0, cameraY = 0;
+    let highScore = parseInt(localStorage.getItem('lava_glitch_highscore')) || 0;
+    let isGameOver = true; 
+    let gameActive = false;
+    let timeScale = 1;
+    let glitchEffect = 0;
+    let shakeIntensity = 0;
+    let gameStarted = false;
+    let hasShield = false;
+    let hasMagnet = false;
+    let hasBoots = false;
+    let hasJetpack = false;
+    let jetpackTime = 0;
+    let revivesUsedThisRun = 0;
+    
+    let tutorialCompletedForever = localStorage.getItem('lava_glitch_tutorial_done') === 'true';
+    
+    let lastMilestone = 0;
+    let lastGlitchMilestone = 0;
+    let lastBuffMilestone = 0;
+    let enemySpawnTimer = 0;
+    let scorePenalty = 0;
+    let bonusScore = 0;
+    let maxReachedHeight = 0;
+
+    // --- ADJUSTED INTENSITY CONSTANTS ---
+    const PLAYER_SIZE = 24;
+    const GRAVITY = 0.45; // Slightly higher gravity for snappier feel
+    const JUMP_FORCE = -12.5; // Stronger base jump
+    const JUMP_UPGRADE_INTENSITY = 3; // Jumping Boots increase intensity by 3 units as requested
+    const JETPACK_FORCE = -14;
+    const LAVA_SPEED_BASE = 0.85; 
+    const TUTORIAL_END_HEIGHT = 300; 
+    const BASE_Y_SPACING = 135;
+    const DIFFICULTY_CAP_SCORE = 600; 
+    const MAX_Y_SPACING = 195; 
+    const MIN_PLATFORM_WIDTH = 55; 
+
+    const SKINS = [
+        { id: 'neon-blue', name: 'Cyber Blue', color: '#00ffcc' },
+        { id: 'light-purple', name: 'Vapor Wave', color: '#cc99ff' },
+        { id: 'slime-green', name: 'Toxic Slime', color: '#33ff33' },
+        { id: 'fire-red', name: 'Blaze Red', color: '#ff3333' },
+        { id: 'gold', name: 'Gold Rush', color: '#ffd700' },
+        { id: 'ghost', name: 'Ghost White', color: '#ffffff' },
+        { id: 'pink', name: 'Deep Pink', color: '#ff1493' },
+        { id: 'orange', name: 'Electric Core', color: '#ff4500' }
+    ];
+
+    const THEMES = [
+        { id: 'cyber', name: 'Cyber', primary: '#00ffcc', accent: '#ff00ff' },
+        { id: 'toxic', name: 'Toxic', primary: '#33ff33', accent: '#006600' },
+        { id: 'blaze', name: 'Lava Flow', primary: '#ff3333', accent: '#ff9900' },
+        { id: 'vapor', name: 'Retrowave', primary: '#cc99ff', accent: '#ff00ff' },
+        { id: 'gold', name: 'Luxury', primary: '#ffd700', accent: '#ffae00' },
+        { id: 'deep', name: 'Deep Sea', primary: '#0066ff', accent: '#00ffff' },
+        { id: 'ghost', name: 'Ghostly', primary: '#ffffff', accent: '#666666' },
+        { id: 'pink', name: 'Magenta', primary: '#ff1493', accent: '#4b0082' }
+    ];
+
+    let currentSkinId = localStorage.getItem('lava_glitch_skin') || 'neon-blue';
+    let currentThemeId = localStorage.getItem('lava_glitch_theme') || 'cyber';
+
+    function applyTheme() {
+        document.body.className = `theme-${currentThemeId}`;
+        localStorage.setItem('lava_glitch_theme', currentThemeId);
+    }
+
+    function setupSkinMenu() {
+        skinGrid.innerHTML = '';
+        SKINS.forEach(skin => {
+            const card = document.createElement('div');
+            card.className = `card ${skin.id === currentSkinId ? 'active' : ''}`;
+            card.innerHTML = `<div class="preview-circle" style="background: ${skin.color}"></div><div class="card-name">${skin.name}</div>`;
+            card.onclick = () => {
+                play8BitClick();
+                currentSkinId = skin.id;
+                localStorage.setItem('lava_glitch_skin', currentSkinId);
+                setupSkinMenu();
+            };
+            skinGrid.appendChild(card);
+        });
+    }
+
+    function setupThemeMenu() {
+        themeGrid.innerHTML = '';
+        THEMES.forEach(theme => {
+            const card = document.createElement('div');
+            card.className = `card ${theme.id === currentThemeId ? 'active' : ''}`;
+            card.innerHTML = `<div class="preview-circle" style="background: ${theme.primary}; border: 3px solid ${theme.accent}"></div><div class="card-name">${theme.name}</div>`;
+            card.onclick = () => {
+                play8BitClick();
+                currentThemeId = theme.id;
+                applyTheme();
+                setupThemeMenu();
+            };
+            themeGrid.appendChild(card);
+        });
+    }
+
+    class Player {
+        constructor() {
+            this.x = width / 2;
+            this.y = height - 100;
+            this.vx = 0;
+            this.vy = 0;
+            this.onPlatform = false;
+        }
+
+        update() {
+            if (hasJetpack && jetpackTime > 0) {
+                this.vy = JETPACK_FORCE * timeScale;
+                jetpackTime -= (1/60) * timeScale;
+                jetTimerText.innerText = Math.max(0, jetpackTime).toFixed(1);
+                if (jetpackTime <= 0) {
+                    hasJetpack = false;
+                    jetpackIndicator.style.display = 'none';
+                }
+            } else {
+                this.vy += GRAVITY * timeScale;
+            }
+            
+            this.x += this.vx * timeScale;
+            this.y += this.vy * timeScale;
+
+            if (this.x < 0) this.x = width;
+            if (this.x > width) this.x = 0;
+
+            this.onPlatform = false;
+            platforms.forEach(p => {
+                if (this.vy > 0 && 
+                    this.x + PLAYER_SIZE > p.x && this.x < p.x + p.w &&
+                    this.y + PLAYER_SIZE > p.y && this.y + PLAYER_SIZE < p.y + p.h + 10) {
+                    
+                    this.y = p.y - PLAYER_SIZE;
+                    this.vy = 0;
+                    this.onPlatform = true;
+                    if (!p.stepped) {
+                        p.stepped = true;
+                        const effectiveScore = Math.min(DIFFICULTY_CAP_SCORE, score);
+                        p.timer = (gameStarted || tutorialCompletedForever) ? Math.max(15, 70 - (effectiveScore / 8)) : 250; 
+                    }
+                }
+            });
+
+            enemies.forEach(e => {
+                const dist = Math.hypot((this.x + PLAYER_SIZE/2) - e.x, (this.y + PLAYER_SIZE/2) - e.y);
+                if (dist < 25) {
+                    this.triggerCollision();
+                    e.destroyed = true;
+                }
+            });
+
+            buffs.forEach(b => {
+                const dx = (this.x + PLAYER_SIZE/2) - b.x;
+                const dy = (this.y + PLAYER_SIZE/2) - b.y;
+                const dist = Math.hypot(dx, dy);
+                
+                if (hasMagnet && dist < 180) {
+                    b.x += (dx / dist) * 7 * timeScale;
+                    b.y += (dy / dist) * 7 * timeScale;
+                }
+
+                if (dist < 30) {
+                    this.triggerBuff();
+                    b.collected = true;
+                }
+            });
+
+            const lavaDist = lavaY - (this.y + PLAYER_SIZE);
+            if ((gameStarted || tutorialCompletedForever) && lavaDist < 50 && lavaDist > 0 && this.vy > 0) {
+                timeScale = 0.15; glitchEffect = 10; nearMissEl.style.display = 'block';
+            } else {
+                timeScale = 1; nearMissEl.style.display = 'none';
+            }
+            if (this.y + PLAYER_SIZE > lavaY) triggerGameOver();
+        }
+
+        triggerCollision() {
+            if (hasShield) {
+                hasShield = false;
+                shieldIndicator.style.display = 'none';
+                shieldHitEl.style.display = 'block';
+                setTimeout(() => { shieldHitEl.style.display = 'none'; }, 1000);
+            } else {
+                scorePenalty += 200;
+                glitchEffect = 30;
+                shakeIntensity = 10;
+                glitchHitEl.style.display = 'block';
+                setTimeout(() => { glitchHitEl.style.display = 'none'; }, 1000);
+            }
+        }
+
+        triggerBuff() {
+            bonusScore += 200;
+            buffHitEl.style.display = 'block';
+            setTimeout(() => { buffHitEl.style.display = 'none'; }, 1000);
+        }
+
+        draw() {
+            const skin = SKINS.find(s => s.id === currentSkinId) || SKINS[0];
+            ctx.save();
+            ctx.fillStyle = skin.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = skin.color;
+            ctx.fillRect(this.x, this.y - cameraY, PLAYER_SIZE, PLAYER_SIZE);
+            
+            if (hasShield) {
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(this.x - 4, this.y - cameraY - 4, PLAYER_SIZE + 8, PLAYER_SIZE + 8);
+            }
+            
+            if (hasBoots) {
+                ctx.fillStyle = '#33ff33';
+                ctx.fillRect(this.x, this.y - cameraY + PLAYER_SIZE - 4, 8, 6);
+                ctx.fillRect(this.x + PLAYER_SIZE - 8, this.y - cameraY + PLAYER_SIZE - 4, 8, 6);
+            }
+
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 4, this.y - cameraY + 6, 4, 4);
+            ctx.fillRect(this.x + 16, this.y - cameraY + 6, 4, 4);
+            ctx.restore();
+        }
+    }
+
+    class Enemy {
+        constructor(y) {
+            this.x = Math.random() * width;
+            this.y = y;
+            this.vx = (Math.random() - 0.5) * 4;
+            this.destroyed = false;
+            this.angle = 0;
+        }
+        update() {
+            this.x += this.vx;
+            this.angle += 0.2;
+            if (this.x < 0 || this.x > width) this.vx *= -1;
+            if (this.y - cameraY > height + 100) this.destroyed = true;
+        }
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y - cameraY);
+            ctx.rotate(this.angle);
+            ctx.fillStyle = '#ff00ff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff00ff';
+            ctx.beginPath();
+            ctx.moveTo(0, -15);
+            ctx.lineTo(13, 10);
+            ctx.lineTo(-13, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-3, -3, 6, 6);
+            ctx.restore();
+        }
+    }
+
+    class Buff {
+        constructor(y) {
+            this.x = Math.random() * (width - 40) + 20;
+            this.y = y;
+            this.collected = false;
+            this.pulse = 0;
+        }
+        update() {
+            this.pulse += 0.1;
+            if (this.y - cameraY > height + 100) this.collected = true;
+        }
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y - cameraY);
+            let s = 1 + Math.sin(this.pulse) * 0.2;
+            ctx.scale(s, s);
+            ctx.fillStyle = '#ffd700';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ffd700';
+            ctx.beginPath();
+            for(let i=0; i<5; i++) {
+                ctx.lineTo(Math.cos((18+i*72)*Math.PI/180)*15, -Math.sin((18+i*72)*Math.PI/180)*15);
+                ctx.lineTo(Math.cos((54+i*72)*Math.PI/180)*7, -Math.sin((54+i*72)*Math.PI/180)*7);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function createPlatform(y) {
+        const effectiveScore = Math.min(DIFFICULTY_CAP_SCORE, score);
+        const pWidth = Math.max(MIN_PLATFORM_WIDTH, 95 - (effectiveScore / 40));
+        
+        platforms.push({
+            x: Math.random() * (width - 110) + 10,
+            y: y,
+            w: pWidth,
+            h: 18,
+            stepped: false,
+            timer: -1,
+            destroyed: false
+        });
+    }
+
+    function init() {
+        width = canvas.width = Math.min(window.innerWidth, 500);
+        height = canvas.height = window.innerHeight;
+        player = new Player();
+        platforms = [];
+        enemies = [];
+        buffs = [];
+        lavaY = (tutorialCompletedForever) ? height + 100 : height + 2000; 
+        score = 0; scorePenalty = 0; bonusScore = 0; lastMilestone = 0; lastGlitchMilestone = 0; lastBuffMilestone = 0;
+        maxReachedHeight = 0;
+        cameraY = 0; 
+        isGameOver = false; 
+        gameActive = true;
+        gameStarted = tutorialCompletedForever; 
+        glitchEffect = 0; shakeIntensity = 0; enemySpawnTimer = 0;
+        revivesUsedThisRun = 0;
+        
+        applyTheme();
+        bestEl.innerText = `BEST: ${highScore}m`;
+        
+        homeMenu.style.display = 'none';
+        overlay.style.display = 'none';
+        shopMenu.style.display = 'none';
+        skinMenu.style.display = 'none';
+        themeMenu.style.display = 'none';
+        
+        newBestBadge.style.display = 'none';
+        speedUpEl.style.display = 'none';
+        glitchHitEl.style.display = 'none';
+        buffHitEl.style.display = 'none';
+        shieldIndicator.style.display = hasShield ? 'block' : 'none';
+        magnetIndicator.style.display = hasMagnet ? 'block' : 'none';
+        bootsIndicator.style.display = hasBoots ? 'block' : 'none';
+        jetpackIndicator.style.display = hasJetpack ? 'block' : 'none';
+        if(hasJetpack) {
+            jetpackTime = 5.0;
+            jetTimerText.innerText = "5.0";
+        }
+
+        tutOverlay.style.display = (tutorialCompletedForever) ? 'none' : 'flex';
+        tutOverlay.style.opacity = (tutorialCompletedForever) ? '0' : '1';
+
+        platforms.push({ x: 0, y: height - 40, w: width, h: 40, stepped: false, timer: -1 });
+        for (let i = 1; i < 15; i++) createPlatform(height - i * BASE_Y_SPACING);
+    }
+
+    function triggerGameOver() {
+        if (isGameOver) return;
+        isGameOver = true;
+        gameActive = false;
+        hasShield = false;
+        hasMagnet = false;
+        hasBoots = false;
+        hasJetpack = false; 
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('lava_glitch_highscore', highScore);
+            newBestBadge.style.display = 'block';
+        } else {
+            newBestBadge.style.display = 'none';
+        }
+        
+        if (revivesUsedThisRun < 1) {
+            reviveBtn.style.display = 'block';
+            reviveBtn.innerText = 'Ad: Revive';
+        } else {
+            reviveBtn.style.display = 'none';
+        }
+
+        finalScoreEl.innerText = `Reached ${score}m`;
+        gameOverBestEl.innerText = `Best: ${highScore}m`;
+        overlay.style.display = 'flex';
+    }
+
+    startBtn.onclick = () => { play8BitClick(); init(); };
+    openShopBtn.onclick = () => { play8BitClick(); homeMenu.style.display = 'none'; shopMenu.style.display = 'flex'; };
+    closeShopBtn.onclick = () => { play8BitClick(); shopMenu.style.display = 'none'; homeMenu.style.display = 'flex'; };
+    
+    watchAdBootsBtn.onclick = () => {
+        play8BitClick();
+        watchAdBootsBtn.innerText = "WATCHING...";
+        setTimeout(() => {
+            hasBoots = true;
+            watchAdBootsBtn.innerText = "BOOTS EARNED!";
+            setTimeout(() => {
+                shopMenu.style.display = 'none';
+                homeMenu.style.display = 'flex';
+                watchAdBootsBtn.innerText = "Watch Ad: Super Jump Boots";
+            }, 800);
+        }, 1200);
+    };
+
+    watchAdShieldBtn.onclick = () => {
+        play8BitClick();
+        watchAdShieldBtn.innerText = "WATCHING...";
+        setTimeout(() => {
+            hasShield = true;
+            watchAdShieldBtn.innerText = "SHIELD EARNED!";
+            setTimeout(() => {
+                shopMenu.style.display = 'none';
+                homeMenu.style.display = 'flex';
+                watchAdShieldBtn.innerText = "Watch Ad: Shield";
+            }, 800);
+        }, 1200);
+    };
+
+    watchAdMagnetBtn.onclick = () => {
+        play8BitClick();
+        watchAdMagnetBtn.innerText = "WATCHING...";
+        setTimeout(() => {
+            hasMagnet = true;
+            watchAdMagnetBtn.innerText = "MAGNET EARNED!";
+            setTimeout(() => {
+                shopMenu.style.display = 'none';
+                homeMenu.style.display = 'flex';
+                watchAdMagnetBtn.innerText = "Watch Ad: Magnet";
+            }, 800);
+        }, 1200);
+    };
+
+    watchAdJetpackBtn.onclick = () => {
+        play8BitClick();
+        watchAdJetpackBtn.innerText = "WATCHING...";
+        setTimeout(() => {
+            hasJetpack = true;
+            jetpackTime = 5.0;
+            watchAdJetpackBtn.innerText = "JETPACK EARNED!";
+            setTimeout(() => {
+                shopMenu.style.display = 'none';
+                homeMenu.style.display = 'flex';
+                watchAdJetpackBtn.innerText = "Watch Ad: Jetpack (5s)";
+            }, 800);
+        }, 1200);
+    };
+
+    reviveBtn.onclick = () => {
+        play8BitClick();
+        reviveBtn.innerText = "WATCHING...";
+        setTimeout(() => {
+            revivesUsedThisRun++;
+            isGameOver = false;
+            gameActive = true;
+            overlay.style.display = 'none';
+            lavaY = cameraY + height + 100;
+            let safePlatform = platforms.find(p => p.y < lavaY - 150 && !p.destroyed);
+            if (safePlatform) {
+                player.x = safePlatform.x + (safePlatform.w / 2) - (PLAYER_SIZE / 2);
+                player.y = safePlatform.y - PLAYER_SIZE - 20;
+                player.vy = JUMP_FORCE;
+            } else {
+                player.y -= 200;
+                player.vy = JUMP_FORCE;
+            }
+            enemies = enemies.filter(e => Math.abs(e.y - player.y) > 200);
+        }, 1200);
+    };
+
+    retryBtn.onclick = () => { play8BitClick(); init(); };
+    backHomeBtn.onclick = () => { play8BitClick(); overlay.style.display = 'none'; homeMenu.style.display = 'flex'; };
+
+    homeSkinsBtn.onclick = () => { play8BitClick(); skinMenu.style.display = 'flex'; };
+    homeThemesBtn.onclick = () => { play8BitClick(); themeMenu.style.display = 'flex'; };
+    closeSkinsBtn.onclick = () => { play8BitClick(); skinMenu.style.display = 'none'; };
+    closeThemesBtn.onclick = () => { play8BitClick(); themeMenu.style.display = 'none'; };
+
+    function update() {
+        if (!gameActive || isGameOver) return;
+        player.update();
+        if (player.y < cameraY + height * 0.45) cameraY += (player.y - (cameraY + height * 0.45)) * 0.1;
+        
+        if (!gameStarted && !tutorialCompletedForever && score >= TUTORIAL_END_HEIGHT) {
+            gameStarted = true;
+            tutorialCompletedForever = true;
+            localStorage.setItem('lava_glitch_tutorial_done', 'true');
+            tutOverlay.style.opacity = '0';
+            setTimeout(() => { tutOverlay.style.display = 'none'; }, 500);
+        }
+
+        if (gameStarted || tutorialCompletedForever) {
+            const speedMultiplier = 1 + (score / 150); 
+            lavaY -= LAVA_SPEED_BASE * speedMultiplier * timeScale;
+            
+            if (Math.floor(score / 200) * 200 > lastMilestone && score >= 300) {
+                lastMilestone = Math.floor(score / 200) * 200; showSpeedUp();
+            }
+            if (Math.floor(score / 200) * 200 > lastGlitchMilestone && score > 0) {
+                lastGlitchMilestone = Math.floor(score / 200) * 200; glitchEffect = 60; shakeIntensity = 25;
+            }
+
+            let buffInterval = 250;
+            if (maxReachedHeight - lastBuffMilestone >= buffInterval) {
+                buffs.push(new Buff(cameraY - 100));
+                lastBuffMilestone = maxReachedHeight;
+            }
+
+            enemySpawnTimer++;
+            if (enemySpawnTimer > Math.max(60, 180 - (score / 10))) {
+                enemies.push(new Enemy(cameraY - 50));
+                enemySpawnTimer = 0;
+            }
+        } else {
+            lavaY = Math.max(lavaY, cameraY + height + 200);
+        }
+
+        enemies.forEach(e => e.update());
+        enemies = enemies.filter(e => !e.destroyed);
+
+        buffs.forEach(b => b.update());
+        buffs = buffs.filter(b => !b.collected);
+
+        const lavaScreenPos = lavaY - cameraY;
+        if (lavaScreenPos < height) shakeIntensity = Math.max(shakeIntensity, (height - lavaScreenPos) / 8);
+        if (shakeIntensity > (height - lavaScreenPos) / 8) shakeIntensity *= 0.95;
+        
+        const currentRawHeight = Math.floor(Math.abs(player.y - (height - 100)) / 10);
+        if (currentRawHeight > maxReachedHeight) {
+            maxReachedHeight = currentRawHeight;
+        }
+
+        score = Math.max(0, maxReachedHeight - scorePenalty + bonusScore);
+        scoreEl.innerText = `${score}m`;
+
+        platforms.forEach(p => {
+            if (p.timer > 0) {
+                p.timer -= timeScale;
+                if (p.timer <= 0) p.destroyed = true;
+            }
+        });
+        platforms = platforms.filter(p => !p.destroyed && p.y - cameraY < height + 500);
+        
+        if (platforms.length > 0 && platforms[platforms.length - 1].y > cameraY - 300) {
+            const effectiveScore = Math.min(DIFFICULTY_CAP_SCORE, score);
+            const desiredSpacing = BASE_Y_SPACING + (effectiveScore / 10);
+            const cappedSpacing = Math.min(MAX_Y_SPACING, desiredSpacing);
+            createPlatform(platforms[platforms.length - 1].y - cappedSpacing);
+        }
+    }
+
+    function showSpeedUp() {
+        speedUpEl.style.display = 'block';
+        setTimeout(() => { speedUpEl.style.display = 'none'; }, 1500);
+    }
+
+    function draw() {
+        const theme = THEMES.find(t => t.id === currentThemeId) || THEMES[0];
+        ctx.save();
+        if (shakeIntensity > 0) ctx.translate((Math.random() - 0.5) * shakeIntensity, (Math.random() - 0.5) * shakeIntensity);
+        ctx.fillStyle = '#111';
+        ctx.fillRect(0, 0, width, height);
+
+        const bgCol = theme.primary;
+
+        ctx.strokeStyle = bgCol;
+        ctx.globalAlpha = 0.08;
+        ctx.lineWidth = 1;
+        for(let i=0; i<width; i+=40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+        }
+        for(let j=-cameraY % 40; j<height; j+=40) {
+            ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(width, j); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        if (gameActive) {
+            platforms.forEach(p => {
+                ctx.fillStyle = p.stepped ? theme.primary : '#333';
+                if (p.timer > 0 && p.timer < 50 && Math.floor(Date.now()/80) % 2 === 0) ctx.fillStyle = '#fff'; 
+                ctx.fillRect(p.x, p.y - cameraY, p.w, p.h);
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(p.x, p.y - cameraY + p.h - 5, p.w, 5);
+            });
+
+            enemies.forEach(e => e.draw());
+            buffs.forEach(b => b.draw());
+            player.draw();
+
+            ctx.fillStyle = '#ff4d00';
+            ctx.shadowBlur = 25; ctx.shadowColor = '#ff4d00';
+            ctx.fillRect(0, lavaY - cameraY, width, height * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, lavaY - cameraY, width, 5);
+        }
+
+        if (shakeIntensity > 4 || glitchEffect > 0) {
+            if (glitchEffect > 0) glitchEffect--;
+            if (Math.random() > 0.7) {
+                ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0, 255, 255, 0.5)' : 'rgba(255, 0, 255, 0.5)';
+                ctx.fillRect(0, Math.random() * height, width, Math.random() * 5 + 1);
+            }
+        }
+        ctx.restore();
+    }
+
+    function loop() {
+        update(); draw(); requestAnimationFrame(loop);
+    }
+
+    function handleInput(e) {
+        if (!gameActive || isGameOver) return;
+        
+        play8BitJump();
+
+        const x = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const canvasRect = canvas.getBoundingClientRect();
+        player.vx = (x - canvasRect.left < canvasRect.width / 2) ? -8 : 8;
+        if (player.onPlatform) {
+            // Apply jump force: Base + Upgrade Intensity (3) if boots are active
+            player.vy = hasBoots ? (JUMP_FORCE - JUMP_UPGRADE_INTENSITY) : JUMP_FORCE;
+        }
+    }
+
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', (e) => { 
+        if (!gameActive || isGameOver) return; 
+        e.preventDefault(); handleInput(e); 
+    }, {passive: false});
+    window.addEventListener('mouseup', () => player.vx = 0);
+    window.addEventListener('touchend', () => player.vx = 0);
+    window.addEventListener('resize', () => { width = canvas.width = Math.min(window.innerWidth, 500); height = canvas.height = window.innerHeight; });
+
+    setupSkinMenu(); setupThemeMenu(); applyTheme(); loop();
+</script>
+</body>
+</html>
