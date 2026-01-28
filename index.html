@@ -3,27 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Lava Glitch: Survival Edition</title>
+    <title>Lava Glitch: 100m Star Edition</title>
     <style>
-        :root {
-            --lava: #ff4d00;
-            --stone: #444;
-            --ui-primary: #00ffcc;
-            --ui-accent: #ff00ff;
-            --ui-bg: rgba(0, 0, 0, 0.7);
-        }
-        
+        :root { --ui-primary: #00ffcc; --ui-accent: #ff00ff; }
         body {
             margin: 0;
             padding: 0;
             background-color: #111;
             font-family: 'Courier New', Courier, monospace;
-            /* FIX: Changed to auto so we can see the backstory */
-            overflow-y: auto; 
-            touch-action: none;
+            overflow-y: auto; /* Allows scrolling to the backstory */
             color: white;
         }
-
         #game-container {
             position: relative;
             width: 100vw;
@@ -31,109 +21,101 @@
             max-width: 500px;
             margin: 0 auto;
             background: #1a1a1a;
-            overflow: hidden; /* Keeps the game inside, but body allows scrolling */
+            overflow: hidden;
         }
-
-        canvas {
-            display: block;
-            image-rendering: pixelated;
-        }
-
-        /* Standard UI Styles */
-        #ui { position: absolute; top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; z-index: 10; pointer-events: none; }
+        canvas { display: block; image-rendering: pixelated; }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
         #score { font-size: 40px; font-weight: bold; color: var(--ui-primary); text-shadow: 2px 2px 0 #000; }
-        #home-menu, #overlay, #shop-menu { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; backdrop-filter: blur(8px); }
-        #overlay, #shop-menu { display: none; }
-        .btn { background: #fff; color: #000; border: none; padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 8px; margin: 5px; width: 220px; }
-        .btn-secondary { background: transparent; color: #fff; border: 2px solid #fff; padding: 10px 20px; font-size: 14px; }
         
-        /* Backstory Section Styling */
+        #menu-layer {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .btn {
+            background: #fff; color: #000; border: none; padding: 15px 30px;
+            font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 8px; margin: 10px; width: 220px;
+        }
+
+        /* BACKSTORY SECTION - IMPORTANT FOR ADSENSE */
         #backstory-section {
+            position: relative;
             max-width: 500px;
-            margin: 20px auto;
-            padding: 20px;
+            margin: 40px auto;
+            padding: 30px;
             background: #222;
-            border-top: 3px solid var(--ui-primary);
+            border: 2px solid var(--ui-primary);
             font-family: sans-serif;
-            line-height: 1.6;
+            color: #eee;
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <div id="ui">
-        <div id="score">0m</div>
-        <div id="high-score-label">BEST: 0m</div>
+    <div id="ui"><div id="score">0m</div></div>
+    
+    <div id="menu-layer">
+        <h1 id="menu-title" style="color: var(--ui-primary);">LAVA GLITCH</h1>
+        <button id="action-btn" class="btn">START GAME</button>
     </div>
 
     <canvas id="canvas"></canvas>
-    
-    <div id="home-menu">
-        <h1 style="font-size: 40px; color: var(--ui-primary);">LAVA GLITCH</h1>
-        <button id="start-btn" class="btn">Start Game</button>
-        <button id="open-shop-btn" class="btn btn-secondary">Powerups</button>
-    </div>
-
-    <div id="overlay">
-        <h1>GLITCHED</h1>
-        <p id="final-score">Reached 0m</p>
-        <button id="retry-btn" class="btn">Try Again</button>
-    </div>
 </div>
 
 <section id="backstory-section">
-    <h2 style="color: var(--ui-primary);">Lava Glitch: The Survival Guide</h2>
-    <p>In the digital void of 2026, a massive data overflow has caused the system to melt. You are a rogue script known as the <strong>Lava Glitch</strong>. Your mission is to climb the platforms and reach the cloud cache before the system reboots. The higher you go, the faster the entropy rises!</p>
-    <p><strong>How to Play:</strong> Tap the left side of your screen to jump left, and the right side to jump right. Avoid the rising lava and collect stars every 100 meters to boost your score.</p>
-    <hr>
-    <p><a href="privacy.html" style="color: var(--ui-primary);">View Our Privacy Policy</a></p>
+    <h2 style="color: var(--ui-primary);">Lava Glitch Survival Guide</h2>
+    <p>The system is crashing. In 2026, the digital world is melting into lava. As the <strong>Lava Glitch</strong>, you must jump to survive. Collect gravity stars every 100 meters to maintain your code stability!</p>
+    <p><strong>Controls:</strong> Tap the left or right side of the screen to move. Watch the lava—it rises faster the higher you go.</p>
+    <hr style="border-color: #444;">
+    <p><a href="privacy.html" style="color: var(--ui-primary);">Privacy Policy</a></p>
 </section>
 
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const scoreEl = document.getElementById('score');
-    const homeMenu = document.getElementById('home-menu');
-    const overlay = document.getElementById('overlay');
-    const startBtn = document.getElementById('start-btn');
-    const retryBtn = document.getElementById('retry-btn');
+    const menuLayer = document.getElementById('menu-layer');
+    const actionBtn = document.getElementById('action-btn');
+    const menuTitle = document.getElementById('menu-title');
 
-    let width, height, player, platforms = [], buffs = [], lavaY, score = 0, cameraY = 0;
+    let width, height, player, platforms = [], stars = [], lavaY, score = 0, cameraY = 0;
     let gameActive = false;
-    let lastStarMilestone = 0; // Tracks the 100m spawning
+    let lastStarMilestone = 0; // The 100m trigger
 
     class Player {
         constructor() {
-            this.x = 250;
-            this.y = 500;
-            this.vx = 0;
-            this.vy = 0;
+            this.x = 200; this.y = 500;
+            this.vx = 0; this.vy = 0;
+            this.width = 24; this.height = 24;
         }
         update() {
-            this.vy += 0.45; // Gravity
+            this.vy += 0.5; // Gravity
             this.x += this.vx;
             this.y += this.vy;
             if (this.x < 0) this.x = width;
             if (this.x > width) this.x = 0;
 
-            // Simple platform collision
             platforms.forEach(p => {
-                if (this.vy > 0 && this.x + 20 > p.x && this.x < p.x + p.w && this.y + 24 > p.y && this.y + 24 < p.y + 20) {
+                if (this.vy > 0 && this.x + 20 > p.x && this.x < p.x + p.w && this.y + 24 > p.y && this.y + 24 < p.y + 15) {
                     this.y = p.y - 24;
-                    this.vy = -12; // Automatic jump
+                    this.vy = -13; // Jump
                 }
             });
 
-            // Star Collection
-            buffs.forEach(b => {
-                if (!b.collected && Math.hypot(this.x - b.x, this.y - b.y) < 30) {
-                    b.collected = true;
-                    score += 200;
+            stars.forEach((s, index) => {
+                if (!s.collected && Math.hypot(this.x - s.x, this.y - s.y) < 30) {
+                    s.collected = true;
+                    score += 150; // Bonus for star
                 }
             });
 
-            if (this.y > lavaY) triggerGameOver();
+            if (this.y > lavaY) endGame();
         }
         draw() {
             ctx.fillStyle = '#00ffcc';
@@ -141,9 +123,9 @@
         }
     }
 
-    class Buff {
+    class Star {
         constructor(y) {
-            this.x = Math.random() * (width - 40) + 20;
+            this.x = Math.random() * (width - 60) + 30;
             this.y = y;
             this.collected = false;
         }
@@ -151,67 +133,70 @@
             if (this.collected) return;
             ctx.fillStyle = '#ffd700';
             ctx.beginPath();
-            ctx.arc(this.x, this.y - cameraY, 10, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y - cameraY, 12, 0, Math.PI * 2);
             ctx.fill();
+            ctx.shadowBlur = 15; ctx.shadowColor = "gold";
         }
     }
 
     function spawnPlatform(y) {
-        platforms.push({ x: Math.random() * (width - 70), y: y, w: 70, h: 15 });
+        platforms.push({ x: Math.random() * (width - 80), y: y, w: 80, h: 15 });
     }
 
     function init() {
         width = canvas.width = Math.min(window.innerWidth, 500);
         height = canvas.height = window.innerHeight;
         player = new Player();
-        platforms = [];
-        buffs = [];
-        score = 0;
-        lastStarMilestone = 0;
-        cameraY = 0;
-        lavaY = height + 100;
+        platforms = []; stars = [];
+        score = 0; lastStarMilestone = 0;
+        cameraY = 0; lavaY = height + 100;
         gameActive = true;
-        homeMenu.style.display = 'none';
-        overlay.style.display = 'none';
+        menuLayer.style.display = 'none';
 
-        for (let i = 0; i < 10; i++) spawnPlatform(height - i * 150);
+        for (let i = 0; i < 15; i++) spawnPlatform(height - i * 140);
     }
 
-    function triggerGameOver() {
+    function endGame() {
         gameActive = false;
-        document.getElementById('final-score').innerText = `Reached ${score}m`;
-        overlay.style.display = 'flex';
+        menuTitle.innerText = "GAME OVER";
+        actionBtn.innerText = "TRY AGAIN";
+        menuLayer.style.display = 'flex';
     }
+
+    // Input Handling
+    window.addEventListener('touchstart', (e) => {
+        if (!gameActive) return;
+        if (e.touches[0].clientX < width / 2) player.vx = -5;
+        else player.vx = 5;
+    });
+    window.addEventListener('touchend', () => player.vx = 0);
 
     function update() {
         if (!gameActive) return;
-
         player.update();
         
-        // Update Score based on height
+        // Dynamic Score based on height
         let currentHeight = Math.floor(Math.abs(player.y - 500) / 10);
         if (currentHeight > score) score = currentHeight;
         scoreEl.innerText = score + "m";
 
-        // NEW STAR LOGIC: Spawn every 100m
+        // THE 100M STAR LOGIC
         if (score >= lastStarMilestone + 100) {
-            lastStarMilestone += 100;
-            buffs.push(new Buff(player.y - 300));
+            lastStarMilestone += 100; 
+            // Spawn star way ahead of the player
+            stars.push(new Star(player.y - 400));
         }
 
-        // Camera follow
-        if (player.y < cameraY + 200) cameraY = player.y - 200;
-        
-        // Lava rise
-        lavaY -= 1;
+        if (player.y < cameraY + 250) cameraY = player.y - 250;
+        lavaY -= (1 + (score / 500)); // Lava gets faster
 
-        // Infinite platforms
-        if (platforms[platforms.length - 1].y > cameraY) {
-            spawnPlatform(platforms[platforms.length - 1].y - 150);
+        if (platforms[platforms.length - 1].y > cameraY - 100) {
+            spawnPlatform(platforms[platforms.length - 1].y - 140);
         }
     }
 
     function draw() {
+        ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = '#1a1a1a';
         ctx.fillRect(0, 0, width, height);
 
@@ -220,23 +205,23 @@
             ctx.fillRect(p.x, p.y - cameraY, p.w, p.h);
         });
 
-        buffs.forEach(b => b.draw());
+        stars.forEach(s => s.draw());
+        ctx.shadowBlur = 0; // Reset glow for other items
 
-        ctx.fillStyle = 'rgba(255, 77, 0, 0.5)';
+        ctx.fillStyle = 'rgba(255, 77, 0, 0.7)';
         ctx.fillRect(0, lavaY - cameraY, width, height);
 
         player.draw();
     }
 
-    function loop() {
+    function gameLoop() {
         update();
         draw();
-        requestAnimationFrame(loop);
+        requestAnimationFrame(gameLoop);
     }
 
-    startBtn.onclick = init;
-    retryBtn.onclick = init;
-    loop();
+    actionBtn.onclick = init;
+    gameLoop();
 </script>
 
 </body>
